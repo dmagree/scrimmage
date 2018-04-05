@@ -24,10 +24,12 @@
 
   <graphviz_fsm>
     digraph {
-        a -> b[label="1"];
-        b -> c[label="2"];
-        c -> d[label="3"];
-        d -> a[label="4"];
+        rankdir=LR
+    
+        a -> kevin[label="event1"];
+        kevin -> c[label="event2"];
+        c -> d[label="event3"];
+        d -> a[label="event4"];
     }
   </graphviz_fsm>
   

@@ -42,7 +42,8 @@
 
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/adjacency_list.hpp>
-// #include <libs/graph/src/read_graphviz_new.cpp>
+#include <boost/graph/graph_utility.hpp>
+#include <boost/property_map/property_map.hpp>
 
 using std::cout;
 using std::endl;
@@ -56,31 +57,18 @@ REGISTER_PLUGIN(scrimmage::Autonomy,
 namespace scrimmage {
 namespace autonomy {
 
-// Vertex properties
-//typedef property < vertex_name_t, std::string,
-//                   property < vertex_color_t, float > > vertex_p;
-
-//// Edge properties
-//typedef property < edge_weight_t, double > edge_p;
-//// Graph properties
-//typedef property < graph_name_t, std::string > graph_p;
-//// adjacency_list-based type
-//typedef adjacency_list < vecS, vecS, directedS,
-//  vertex_p, edge_p, graph_p > graph_t;
-
-struct Vertex {
-    std::string name, label, shape;
+struct DotVertex {
+    std::string name; //, label, shape;
 };
 
-struct Edge {
+struct DotEdge {
     std::string label;
-    double weight; // perhaps you need this later as well, just an example
+    // double weight;
 };
+
 
 typedef boost::property<boost::graph_name_t, std::string> graph_p;
-typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, Vertex, Edge, graph_p> graph_t;
-
-//typedef boost::property<boost::graph_name_t, std::string> graph_t;
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, DotVertex, DotEdge, graph_p> graph_t;
 
 SimpleFSM::SimpleFSM() {
 }
@@ -91,21 +79,86 @@ void SimpleFSM::init(std::map<std::string, std::string> &params) {
     // Construct an empty graph and prepare the dynamic_property_maps.
     graph_t graph(0);
 
-    boost::dynamic_properties dp/*(ignore_other_properties)*/;
-    dp.property("node_id", boost::get(&Vertex::name,  graph));
-    dp.property("label",   boost::get(&Vertex::label, graph));
-    dp.property("shape",   boost::get(&Vertex::shape, graph));
-    dp.property("label",   boost::get(&Edge::label,   graph));
+    boost::dynamic_properties dp(boost::ignore_other_properties);
+    dp.property("node_id", boost::get(&DotVertex::name,  graph));
+    dp.property("label",   boost::get(&DotEdge::label,   graph));
 
-    std::istringstream graph_stream(graph_str);
-    bool status = boost::read_graphviz(graph_stream, graph, dp);
-    cout << "STATUS: " << status << endl;
-    //return status? 0 : 255;
+    // boost::ref_property_map<graph_t*,std::string> gname(boost::get_property(graph, boost::graph_name));
+    // dp.property("name", gname);
 
-    //// Use ref_property_map to turn a graph property into a property map
-    //std::string graph_name = "FSM";
-    //boost::ref_property_map<graph_t *, std::string> gname(boost::get_property(graph, graph_name));
-    //dp.property("name",    gname);
+    if (!boost::read_graphviz(graph_str, graph, dp)) {
+        cout << "Failed to parse graphviz fms" << endl;
+        return;
+    }
+
+    std::cout << "Graph name: '" << boost::get_property(graph, boost::graph_name) << endl;
+
+    const char* name = "ABCDEF";
+    cout << "Edge Set:" << endl;
+    boost::print_edges(graph, name);
+    cout << "Node set: " << endl;
+    boost::print_vertices(graph, name);
+    cout << "Graph: " << endl;
+    boost::print_graph(graph, name);
+
+    // const boost::property_map<graph_t, boost::vertex_attribute_t>::
+    //    type& vertAttrMap = boost::get(boost::vertex_attribute, graph);
+
+    typename boost::property_map<graph_t, boost::vertex_index_t>::type vertex_id = boost::get(boost::vertex_index, graph);
+
+    typename boost::property_map<graph_t, boost::vertex_index_t>::type vertex_name = boost::get(boost::vertex_index, graph);
+
+
+    cout << "iterate over edges..." << endl;
+    std::pair<boost::graph_traits<graph_t>::edge_iterator,
+              boost::graph_traits<graph_t>::edge_iterator> edgeIteratorRange = boost::edges(graph);
+    for (boost::graph_traits<graph_t>::edge_iterator edgeIterator = edgeIteratorRange.first;
+        edgeIterator != edgeIteratorRange.second; ++edgeIterator) {
+        cout << boost::source(*edgeIterator, graph) << " -> " << boost::target(*edgeIterator, graph) << endl;
+        // cout << edgeIterator->label << endl;
+        // cout << *ei.first << endl;
+        // std::cout << *edgeIterator << ", label=" <<   << std::endl;
+    }
+
+
+    // std::pair<boost::graph_traits<graph_t>::vertex_iterator,
+    //           boost::graph_traits<graph_t>::vertex_iterator> vertexIteratorRange = boost::vertices(graph);
+    // for (boost::graph_traits<graph_t>::vertex_iterator vertexIterator = vertexIteratorRange.first;
+    //      vertexIterator != vertexIteratorRange.second; ++vertexIterator) {
+    //     // cout << graph[*vertexIterator].name << endl; // works
+    //     boost::graph_traits<graph_t>::vertex_descriptor v = *vertexIterator.first;
+    //
+    //     //cout << boost::source(*edgeIterator, graph) << " -> " << boost::target(*edgeIterator, graph) << endl;
+    //     //cout << *ei.first << endl;
+    //     //std::cout << *edgeIterator << ", label=" <<   << std::endl;
+    // }
+
+    // boost::ref_property_map<graph_t *, std::string> vertex_struct(boost::get_property(graph, Vertex));
+    // dp.property("label");
+
+    // typedef boost::property_map<graph_t, boost::vertex_index_t>::type IndexMap;
+    // boost::property_map<graph_t, Vertex>::type vertex_struct;// = boost::get(boost::vertex_index, graph);
+
+    // boost::property_map<graph_t, Vertex>::type vertex_kevin;//
+    // = get(edge_weight, g);
+
+
+    cout << "iterate over vertices..." << endl;
+    typedef boost::graph_traits<graph_t>::vertex_iterator vertex_iter;
+    std::pair<vertex_iter, vertex_iter> vp;
+    for (vp = boost::vertices(graph); vp.first != vp.second; ++vp.first) {
+        boost::graph_traits<graph_t>::vertex_descriptor v = *vp.first;
+        cout << "State Name: " << graph[v].name << endl;
+        // std::cout << index[v] <<  " ";
+    }
+
+    // // Create a property_map of the input vertex ids
+    // boost::property_map<graph_t, Vertex>::type vertex_struct =
+    //     boost::get(Vertex(), graph);
+    // cout << "Node name: " << graph[0].name << endl;
+    // cout << "Node name: " << graph[1].name << endl;
+
+    return;
 }
 
 bool SimpleFSM::step_autonomy(double t, double dt) {
