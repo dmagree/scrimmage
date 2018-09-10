@@ -661,6 +661,9 @@ bool SimControl::run_single_step(int loop_number) {
     reseed_task_.update(t);
     start_loop_timer();
 
+
+    uint64_t tstart = timer_.getnanotime();
+
     if (!generate_entities(t)) {
         cout << "Failed to generate entity" << endl;
         return false;
@@ -681,7 +684,6 @@ bool SimControl::run_single_step(int loop_number) {
     // Stay in loop if currently paused.
     bool exit_loop = false;
     do {
-        loop_wait();
 
         // Were we told to exit, externally?
         exit_mutex_.lock();
@@ -714,6 +716,8 @@ bool SimControl::run_single_step(int loop_number) {
         return false;
     }
 
+
+
     create_rtree();
     set_autonomy_contacts();
     if (!run_entities()) {
@@ -723,6 +727,8 @@ bool SimControl::run_single_step(int loop_number) {
         return false;
     }
 
+    uint64_t split1 = timer_.getnanotime();
+
     if (!run_sensors()) {
         if (!limited_verbosity_) {
             std::cout << "Exiting due to plugin request." << std::endl;
@@ -730,11 +736,17 @@ bool SimControl::run_single_step(int loop_number) {
         return false;
     }
 
+
+    uint64_t split2 = timer_.getnanotime();
+
     if (!run_interaction_detection()) {
         auto msg = std::make_shared<Message<sm::EntityInteractionExit>>();
         pub_ent_int_exit_->publish(msg);
         return false;
     }
+
+
+    uint64_t split3 = timer_.getnanotime();
 
     // The networks are run before the metrics, so that messages that are
     // published on the final time stamp can be processed by the metrics.
@@ -745,6 +757,9 @@ bool SimControl::run_single_step(int loop_number) {
         return false;
     }
 
+
+    uint64_t split4 = timer_.getnanotime();
+
     if (!run_metrics()) {
         if (!limited_verbosity_) {
             std::cout << "Exiting due to metrics plugin exception" << std::endl;
@@ -752,9 +767,18 @@ bool SimControl::run_single_step(int loop_number) {
         return false;
     }
 
+
+    uint64_t split5 = timer_.getnanotime();
+
     run_remove_inactive();
-    run_send_shapes();
+    //run_send_shapes();
+    shapes_.clear();
     run_send_contact_visuals(); // send updated visuals
+
+
+    uint64_t split6 = timer_.getnanotime();
+
+
 
     if (display_progress_) {
         if (loop_number % 100 == 0) {
@@ -763,6 +787,17 @@ bool SimControl::run_single_step(int loop_number) {
     }
 
     // Increment time and loop counter
+    bool ret = loop_wait();
+    if (ret) {
+        cout << "Elapsed time split1 " << (split1-tstart)*1e-6 << endl;
+        cout << "Elapsed time split2 " << (split2-split1)*1e-6 << endl;
+        cout << "Elapsed time split3 " << (split3-split2)*1e-6 << endl;
+        cout << "Elapsed time split4 " << (split3-split3)*1e-6 << endl;
+        cout << "Elapsed time split5 " << (split5-split4)*1e-6 << endl;
+        cout << "Elapsed time split6 " << (split6-split5)*1e-6 << endl;
+        cout << "wall time: " << timer_.elapsed_time() << endl;
+        cout << "sim time:  " << t << endl;
+    }
     set_time(t + dt_);
     prev_paused_ = paused_;
 
@@ -1141,10 +1176,16 @@ void SimControl::start_loop_timer() {
     timer_mutex_.unlock();
 }
 
-void SimControl::loop_wait() {
+bool SimControl::loop_wait() {
+    bool overrun = false;
     timer_mutex_.lock();
-    timer_.loop_wait();
+    boost::posix_time::time_duration ret = timer_.loop_wait();
+    if(!paused() && ret.total_nanoseconds() < 0) {
+        cout << "waited for (ms) " << ret.total_nanoseconds()*1e-6 << endl;
+        overrun = true;
+    }
     timer_mutex_.unlock();
+    return overrun;
 }
 
 void SimControl::single_step(bool value) {
@@ -1324,16 +1365,22 @@ bool SimControl::run_entities() {
 
 void SimControl::run_send_shapes() {
     // Convert map of shapes to sp::Shapes type
+
+    int i = 0;
+
     scrimmage_proto::Shapes shapes;
     shapes.set_time(this->t());
     for (auto &kv : shapes_) {
         for (auto &shape : kv.second) {
             scrimmage_proto::Shape *s = shapes.add_shape();
             *s = *shape;
+            i++;
         }
     }
     outgoing_interface_->send_shapes(shapes);
     shapes_.clear();
+
+    //cout << "Number of shapes " << i << endl;
 }
 
 void SimControl::run_send_contact_visuals() {
