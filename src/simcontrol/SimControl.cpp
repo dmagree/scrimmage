@@ -786,7 +786,7 @@ bool SimControl::run_single_step(int loop_number) {
     uint64_t split5 = timer_.getnanotime();
 
     run_remove_inactive();
-    //run_send_shapes();
+    run_send_shapes();
     shapes_.clear();
     run_send_contact_visuals(); // send updated visuals
 
@@ -1404,6 +1404,9 @@ bool SimControl::run_entities() {
 void SimControl::run_send_shapes() {
     // Convert map of shapes to sp::Shapes type
 
+
+    uint64_t tstart = timer_.getnanotime();
+
     int i = 0;
 
     scrimmage_proto::Shapes shapes;
@@ -1415,8 +1418,15 @@ void SimControl::run_send_shapes() {
             i++;
         }
     }
+    uint64_t split1 = timer_.getnanotime();
     outgoing_interface_->send_shapes(shapes);
     shapes_.clear();
+    uint64_t split2 = timer_.getnanotime();
+
+    if( (split2-tstart)*1e-6 > 1 ) {
+        cout << "Elapsed time split1 " << (split1-tstart)*1e-6 << endl;
+        cout << "Elapsed time split2 " << (split2-split1)*1e-6 << endl;
+    }
 
     //cout << "Number of shapes " << i << endl;
 }
