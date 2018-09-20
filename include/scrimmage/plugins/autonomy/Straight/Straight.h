@@ -72,6 +72,8 @@ class Straight : public scrimmage::Autonomy{
 
     bool noisy_state_set_ = false;
     State noisy_state_;
+
+    std::map<int, State> noisy_contacts_;
 };
 } // namespace autonomy
 } // namespace scrimmage
