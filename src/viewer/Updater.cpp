@@ -1194,6 +1194,12 @@ void Updater::update_trail(std::shared_ptr<ActorContact> &actor_contact,
     }
 }
 
+void Updater::process_custom_key(std::string &key) {
+    gui_msg_.set_custom_key(key);
+    outgoing_interface_->send_gui_msg(gui_msg_);
+    gui_msg_.set_custom_key("");
+}
+
 void Updater::inc_follow() {
     inc_follow_ = true;
 }
@@ -1268,7 +1274,8 @@ void Updater::toggle_helpmenu() {
             << "w\n"
             << "s\n"
             << "CTRL + left click\n"
-            << "SHIFT + left click\n";
+            << "SHIFT + left click\n"
+            << ";\n";
         helpkeys_actor_->SetInput(stream_helpkeys.str().c_str());
         stream_helpvalues
             << ": quit\n"
@@ -1290,7 +1297,8 @@ void Updater::toggle_helpmenu() {
             << ": wireframe\n"
             << ": solid\n"
             << ": rotate world\n"
-            << ": pan camera\n";
+            << ": pan camera\n"
+            << ": enter custom keypress\n";
         helpvalues_actor_->SetInput(stream_helpvalues.str().c_str());
     } else {
         stream_helpkeys << " ";
@@ -2023,7 +2031,7 @@ void Updater::get_model_texture(std::string name,
         auto rpy_iter = c_parse.params().find("visual_rpy");
         if (rpy_iter != c_parse.params().end()) {
             std::vector<double> tf_rpy = {0.0, 0.0, 0.0};
-            str2vec(rpy_iter->second, " ", tf_rpy, 3);
+            str2container(rpy_iter->second, " ", tf_rpy, 3);
             for (auto& e : tf_rpy) {
                 e = sc::Angles::deg2rad(e);
             }

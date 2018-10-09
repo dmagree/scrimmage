@@ -174,6 +174,7 @@ class SimControl {
     std::string jsbsim_root_;
 
     TimePtr time_;
+    ParameterServerPtr param_server_;
 
     double t0_ = 0;
     double tend_ = 0;
@@ -261,6 +262,7 @@ class SimControl {
     PublisherPtr pub_no_teams_;
     PublisherPtr pub_one_team_;
     PublisherPtr pub_world_point_clicked_;
+    PublisherPtr pub_custom_key_;
 
     std::list<EntityPtr> not_ready_;
     DelayedTask screenshot_task_;

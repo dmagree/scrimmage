@@ -12,10 +12,6 @@ add_library(${LIBRARY_NAME} SHARED
   ${SRCS}
 )
 
-target_link_libraries(${LIBRARY_NAME}
-  scrimmage-core
-)
-
 set(_soversion ${LIB_MAJOR}.${LIB_MINOR}.${LIB_RELEASE})
 
 set_target_properties(${LIBRARY_NAME} PROPERTIES
@@ -24,11 +20,15 @@ set_target_properties(${LIBRARY_NAME} PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${PROJECT_PLUGIN_LIBS_DIR}
 )
 
-target_include_directories(${LIBRARY_NAME}
+TARGET_INCLUDE_DIRECTORIES(${LIBRARY_NAME}
   PUBLIC
-    $<INSTALL_INTERFACE:include>
-    $<BUILD_INTERFACE:${PROJECT_INC_DIR}>
-)
+  ${PYTHON_INCLUDE_DIRS})
+
+TARGET_LINK_LIBRARIES(${LIBRARY_NAME}
+  PUBLIC
+  scrimmage-core
+  scrimmage-python
+  )
 
 install(TARGETS ${LIBRARY_NAME}
   # IMPORTANT: Add the library to the "export-set"

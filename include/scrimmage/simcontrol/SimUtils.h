@@ -40,6 +40,8 @@
 #include <memory>
 #include <unordered_map>
 #include <list>
+#include <set>
+#include <map>
 #include <string>
 
 namespace boost {
@@ -55,6 +57,7 @@ struct SimUtilsInfo {
     RTreePtr rtree;
     PubSubPtr pubsub;
     TimePtr time;
+    ParameterServerPtr param_server;
     RandomPtr random;
     std::shared_ptr<std::unordered_map<int, int>> id_to_team_map;
     std::shared_ptr<std::unordered_map<int, EntityPtr>> id_to_ent_map;
@@ -63,12 +66,21 @@ struct SimUtilsInfo {
 bool create_ent_inters(const SimUtilsInfo &info,
                        ContactMapPtr contacts,
                        std::list<scrimmage_proto::ShapePtr> &shapes,
-                       std::list<EntityInteractionPtr> &ent_inters);
+                       std::list<EntityInteractionPtr> &ent_inters,
+                       const std::set<std::string> &plugin_tags = {},
+                       std::function<void(std::map<std::string, std::string>&)>
+                       param_override_func = [](std::map<std::string, std::string>&){});
 
 bool create_metrics(const SimUtilsInfo &info, ContactMapPtr contacts,
-                    std::list<MetricsPtr> &metrics_list);
+                    std::list<MetricsPtr> &metrics_list,
+                    const std::set<std::string> &plugin_tags = {},
+                    std::function<void(std::map<std::string, std::string>&)>
+                    param_override_func = [](std::map<std::string, std::string>&){});
 
-bool create_networks(const SimUtilsInfo &info, NetworkMap &networks);
+bool create_networks(const SimUtilsInfo &info, NetworkMap &networks,
+                     const std::set<std::string> &plugin_tags = {},
+                     std::function<void(std::map<std::string, std::string>&)>
+                     param_override_func = [](std::map<std::string, std::string>&){});
 
 void run_callbacks(PluginPtr plugin);
 
@@ -76,7 +88,7 @@ void print_io_error(const std::string &in_name, VariableIO &v);
 
 bool verify_io_connection(VariableIO &output_plugin, VariableIO &input_plugin);
 
-boost::optional<std::string> run_test(std::string mission);
+boost::optional<std::string> run_test(std::string mission, bool init_python = true);
 
 bool logging_logic(MissionParsePtr mp, std::string s);
 

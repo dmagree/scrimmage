@@ -49,6 +49,7 @@
 #include <functional>
 #include <list>
 #include <map>
+#include <set>
 #include <string>
 #include <mutex> // NOLINT
 
@@ -60,44 +61,39 @@
 
 namespace scrimmage {
 
+class ParameterServer;
+using ParameterServerPtr = std::shared_ptr<ParameterServer>;
+
 class External {
  public:
     External();
     EntityPtr &entity();
-    void setup_logging();
-    bool create_entity(int max_entities, int entity_id,
-                       const std::string &entity_name,
-                       bool connect_entity = true);
-
-    template <class AcceptFunc>
-    bool create_entity(int max_entities, int entity_id,
-                       const std::string &entity_name,
-                       AcceptFunc accept_func, bool connect_entity = true) {
-
-        if (!create_entity(max_entities, entity_id, entity_name, connect_entity)) {
-            return false;
-        }
-
-        auto filter_func = [&](auto &p) {return !accept_func(p);};
-        auto &a = entity_->autonomies();
-        a.erase(std::remove_if(a.begin(), a.end(), filter_func), a.end());
-
-        return true;
-    }
-
+    bool create_entity(const std::string &mission_file,
+                       const std::string &entity_tag,
+                       const std::string &plugin_tags_str,
+                       int entity_id,
+                       int max_entities,
+                       const std::string &log_dir,
+                       std::function<void(std::map<std::string, std::string>&)> param_override_func = [](std::map<std::string, std::string>&){});
     void close();
     bool create_interactions();
 
-    double min_motion_dt = 1;
+    double motion_dt_ = 1;
     VariableIO vars;
     std::mutex mutex;
     DelayedTask update_contacts_task;
     MissionParsePtr mp();
     bool send_messages();
 
+    void print_plugins(std::ostream &out) const;
+
+    ParameterServerPtr param_server() { return param_server_; }
+
  protected:
+    void setup_logging(const std::string &log_dir);
     void update_ents();
     EntityPtr entity_;
+    bool enable_motion_ = false;
     std::list<EntityInteractionPtr> ent_inters_;
     std::list<MetricsPtr> metrics_;
     NetworkMapPtr networks_;
@@ -107,6 +103,7 @@ class External {
     double last_t_;
     PubSubPtr pubsub_;
     TimePtr time_;
+    ParameterServerPtr param_server_;
     MissionParsePtr mp_;
 
     std::shared_ptr<std::unordered_map<int, int>> id_to_team_map_;
@@ -197,7 +194,7 @@ class External {
     srv_cb(const std::string &service_name,
            scrimmage::Service sc_service_func,
            Sc2RosResFunc sc2ros_response_func) {
-        auto ros2sc_req_func = [&](typename RosType::Request &ros_req) {return 0;};
+        auto ros2sc_req_func = [&](typename RosType::Request &/*ros_req*/) {return 0;};
         return srv_cb<RosType, ScrimmageResponseType>(
             service_name, sc_service_func, ros2sc_req_func, sc2ros_response_func);
     }
@@ -295,9 +292,9 @@ class External {
               class RosType>
     void
     // cppcheck-suppress passedByValue
-    create_ros_req(typename std::enable_if_t<std::is_void<ScReqType>::value, MessageBasePtr> sc_req,
-                   Sc2RosReqFunc sc2ros_req_func,
-                   const std::string &err_msg, RosType &srv) {}
+    create_ros_req(typename std::enable_if_t<std::is_void<ScReqType>::value, MessageBasePtr> /*sc_req*/,
+                   Sc2RosReqFunc /*sc2ros_req_func*/,
+                   const std::string &/*err_msg*/, RosType &/*srv*/) {}
 
     template <class ScReqType,
               class Sc2RosReqFunc,
