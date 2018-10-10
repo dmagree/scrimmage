@@ -64,15 +64,12 @@ void Timer::start_loop_timer() {
 }
 
 boost::posix_time::time_duration Timer::loop_wait() {
-    bool missed_deadline = true;
-
     boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time();
     boost::posix_time::time_duration time_diff = time - loop_timer_;
 
     boost::posix_time::time_duration remainder = iterate_period_ - time_diff;
     if (time_diff < iterate_period_) {
         boost::this_thread::sleep(remainder);
-        missed_deadline = false;
     }
     return remainder;
 }
