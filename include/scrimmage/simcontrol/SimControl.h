@@ -100,7 +100,7 @@ class SimControl {
     void setup_timer(double rate, double time_warp);
     void start_overall_timer();
     void start_loop_timer();
-    bool loop_wait();
+    void loop_wait();
     void inc_warp();
     void dec_warp();
     void pause(bool pause);
