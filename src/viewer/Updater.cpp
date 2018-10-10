@@ -550,14 +550,14 @@ bool Updater::update_camera() {
             camera_pos[1] = y_pos - 6.0;
             camera_pos[2] = z_pos + 2.0;
         } else if (view_mode_ == ViewMode::FOLLOW) {
-            Eigen::Vector3d base_offset(-50, 15, 15);
+            Eigen::Vector3d base_offset(-50, 0, 15);
             Eigen::Vector3d rel_cam_pos = base_offset.normalized() * follow_offset_;
             Eigen::Vector3d unit_vector = rel_cam_pos / rel_cam_pos.norm();
 
             sp::Quaternion sp_quat = it->second->contact.state().orientation();
             sc::Quaternion quat(sp_quat.w(), sp_quat.x(), sp_quat.y(), sp_quat.z());
 
-            //unit_vector = quat.rotate(unit_vector);
+            unit_vector = quat.rotate(unit_vector);
             Eigen::Vector3d pos = Eigen::Vector3d(x_pos, y_pos, z_pos) +
                 unit_vector * rel_cam_pos.norm();
 
@@ -567,9 +567,8 @@ bool Updater::update_camera() {
 
             // Compute the camera's "up" vector
             Eigen::Vector3d z_axis(0, 0, 1);
-            //Eigen::Vector3d up = quat * z_axis;
-            //renderer_->GetActiveCamera()->SetViewUp(up(0), up(1), up(2));
-            renderer_->GetActiveCamera()->SetViewUp(z_axis(0), z_axis(1), z_axis(2));
+            Eigen::Vector3d up = quat * z_axis;
+            renderer_->GetActiveCamera()->SetViewUp(up(0), up(1), up(2));
 
         } else if (view_mode_ == ViewMode::FPV) {
             sp::Quaternion sp_quat = it->second->contact.state().orientation();
