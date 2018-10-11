@@ -550,7 +550,15 @@ bool Updater::update_camera() {
             camera_pos[1] = y_pos - 6.0;
             camera_pos[2] = z_pos + 2.0;
         } else if (view_mode_ == ViewMode::FOLLOW) {
-            Eigen::Vector3d base_offset(-50, 15, 15);
+
+            double currentPos[3];
+            renderer_->GetActiveCamera()->GetPosition(currentPos);
+            double currentFp[3];
+            renderer_->GetActiveCamera()->GetFocalPoint(currentFp);
+            Eigen::Vector3d base_offset(currentPos[0]-currentFp[0], 
+                                        currentPos[1]-currentFp[1], 
+                                        currentPos[2]-currentFp[2]);
+            
             Eigen::Vector3d rel_cam_pos = base_offset.normalized() * follow_offset_;
             Eigen::Vector3d unit_vector = rel_cam_pos / rel_cam_pos.norm();
 
