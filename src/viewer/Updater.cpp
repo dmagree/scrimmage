@@ -1807,8 +1807,8 @@ bool Updater::draw_plane(const bool &new_shape,
                          vtkSmartPointer<vtkPolyDataAlgorithm> &source,
                          vtkSmartPointer<vtkPolyDataMapper> &mapper) {
   // sanity checks
-  if (abs(p.x_length()) < std::numeric_limits<double>::epsilon()
-      || abs(p.y_length()) < std::numeric_limits<double>::epsilon()) {
+  if (std::abs(p.x_length()) < std::numeric_limits<double>::epsilon()
+      || std::abs(p.y_length()) < std::numeric_limits<double>::epsilon()) {
     std::cout << "Cannot draw plane: bad dimensions (" << p.x_length() << ", " << p.y_length() << ")\n";
     return false;
   }
@@ -1869,6 +1869,12 @@ bool Updater::draw_plane(const bool &new_shape,
     texturePlane->SetInputConnection(planeSource->GetOutputPort());
   } else {
     std::cout << "plane texture not found: " << texture_file << std::endl;
+  }
+
+  // set ambient lighting for the plane
+  if (!p.diffuse_lighting()) {
+    actor->GetProperty()->SetAmbient(1);
+    actor->GetProperty()->SetDiffuse(0);
   }
 
   return true;
@@ -2000,14 +2006,18 @@ bool Updater::draw_text(const bool &new_shape,
         textSource = vtkVectorText::SafeDownCast(source);
     }
 
-    if (t.scale() > 0) {
-        actor->SetScale(t.scale(), t.scale(), t.scale());
-    }
+    if (textSource) {
+        if (t.scale() > 0) {
+            actor->SetScale(t.scale(), t.scale(), t.scale());
+        }
 
-    textSource->SetText(t.text().c_str());
-    actor->SetPosition(t.center().x(), t.center().y(),
-                       t.center().z());
-    return true;
+        textSource->SetText(t.text().c_str());
+        actor->SetPosition(t.center().x(), t.center().y(),
+                           t.center().z());
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void Updater::get_model_texture(std::string name,
