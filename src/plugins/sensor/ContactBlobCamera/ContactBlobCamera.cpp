@@ -80,7 +80,8 @@ void ContactBlobCamera::init(std::map<std::string, std::string> &params) {
     show_image_ = sc::get<bool>("show_image", params, show_image_);
     show_frustum_ = sc::get<bool>("show_frustum", params, show_frustum_);
     log_detections_ = sc::get<bool>("log_detections", params, log_detections_);
-    show_sim_contacts_ = sc::get<bool>("show_sim_contacts", params, true);
+    show_sim_contacts_ = sc::get<bool>("show_sim_contacts", params, show_sim_contacts_);
+    print_sim_distance_ = sc::get<bool>("print_sim_distance", params, print_sim_distance_);
 
     // Parse the simulated detections
     std::string sim_det_str = sc::get<std::string>("simulated_detections", params, "");
@@ -408,6 +409,21 @@ bool ContactBlobCamera::step() {
         }
 
         last_contact_send_time_ = time_->t();
+    }
+
+    if (print_sim_distance_) {
+        for (auto &kv : sim_contacts_) {
+            double distance = (kv.second.state()->pos() - sensor_frame.pos()).norm();
+            if(distance < min_distance_) {
+                min_distance_ = distance;
+            }
+        }
+
+        if (time_->t() > last_print_time_ + 5.0){
+            last_print_time_ = time_->t();
+            std::cout << "ContactBlobCamera: Min distance to all target: " << min_distance_ << " m" << std::endl;
+            min_distance_ = 1e10;
+        }
     }
 
     // Add false positives
