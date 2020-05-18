@@ -414,12 +414,12 @@ bool ContactBlobCamera::step() {
     if (print_sim_distance_) {
         for (auto &kv : sim_contacts_) {
             double distance = (kv.second.state()->pos() - sensor_frame.pos()).norm();
-            if(distance < min_distance_) {
+            if (distance < min_distance_) {
                 min_distance_ = distance;
             }
         }
 
-        if (time_->t() > last_print_time_ + 5.0){
+        if (time_->t() > last_print_time_ + 5.0) {
             last_print_time_ = time_->t();
             std::cout << "ContactBlobCamera: Min distance to all target: " << min_distance_ << " m" << std::endl;
             min_distance_ = 1e10;

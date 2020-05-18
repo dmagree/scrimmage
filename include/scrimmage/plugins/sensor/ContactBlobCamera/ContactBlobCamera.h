@@ -113,7 +113,7 @@ class ContactBlobCamera : public scrimmage::Sensor {
 
     double last_contact_send_time_ = 0.0;
     double contact_send_dt_ = 1.0; // seconds
-    
+
     double last_print_time_ = 0.0;
     double min_distance_ = 1e10;
 
