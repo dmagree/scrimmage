@@ -235,6 +235,8 @@ bool FixedWing6DOF::init(std::map<std::string, std::string> &info,
     C_LQ_ = sc::get<double>("C_LQ", params, C_LQ_);
     C_L_alpha_dot_ = sc::get<double>("C_L_alpha_dot", params, C_L_alpha_dot_);
     C_L_delta_elevator_ = sc::get<double>("C_L_delta_elevator", params, C_L_delta_elevator_);
+    C_Norm_alpha_ = sc::get<double>("C_Norm_alpha", params, C_Norm_alpha_);
+    C_Norm_alpha_alpha_ = sc::get<double>("C_Norm_alpha_alpha", params, C_Norm_alpha_alpha_);
 
     // Side force coefficients
     C_Y_beta_ = sc::get<double>("C_Y_beta", params, C_Y_beta_);
@@ -458,6 +460,9 @@ void FixedWing6DOF::model(const vector_t &x , vector_t &dxdt , double t) {
     double CL = (C_L0_ + C_L_alpha_*alpha_ + C_LQ_*x_[Q] * c_ / (2*V_tau) +
                    C_L_alpha_dot_ * alpha_dot_ * c_ / (2*V_tau) +
                    C_L_delta_elevator_ * delta_elevator_);
+    if (C_Norm_alpha_ > 0) {
+        CL += (0.5*C_Norm_alpha_ * sin(2*alpha_) + C_Norm_alpha_alpha_ * sin(alpha_) * std::abs((sin(alpha_)))) * cos(alpha_);
+    }
     double lift = CL * pVtS;
 
     double drag = (C_D0_ + C_D_alpha_*std::abs(alpha_) + CL*CL/(M_PI*AR_*e_) +

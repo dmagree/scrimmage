@@ -158,6 +158,8 @@ class FixedWing6DOF : public scrimmage::motion::RigidBody6DOFBase{
     double C_LQ_ = 0.0;
     double C_L_alpha_dot_ = 0.72;
     double C_L_delta_elevator_ = 0.36;
+    double C_Norm_alpha_ = 0.0;
+    double C_Norm_alpha_alpha_ = 0.0;
 
     double C_M0_ = 0.0;
     double C_MQ_ = -3.6;
